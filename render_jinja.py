@@ -16,9 +16,25 @@
 
 
 from __future__ import print_function
+import os
 from argparse import ArgumentParser, ArgumentTypeError
 
 import jinja2
+
+
+class Loader(jinja2.BaseLoader):
+    def get_source(self, environment, template_path):
+        filename = os.path.join(os.getcwd(), template_path)
+        mtime = os.path.getmtime(filename)
+        def uptodate():
+            return os.path.getmtime(filename) == mtime
+        contents = read_file(template_path)
+        return contents, filename, uptodate
+
+
+def read_file(path):
+    with open(path, 'r') as f:
+        return f.read().decode()
 
 
 def arg_parser(prog):
@@ -49,7 +65,7 @@ def parse_attr(s):
 def main(cwd, argv):
     args = parse_args(argv)
     with open(args.output, 'w') as f:
-        env = jinja2.Environment(loader=jinja2.FileSystemLoader(cwd),
+        env = jinja2.Environment(loader=Loader(),
                                  undefined=jinja2.StrictUndefined)
         tpl = env.get_template(args.path)
         for part in tpl.stream(argv=argv, **args.attrs):
