@@ -22,7 +22,7 @@ from argparse import ArgumentParser, ArgumentTypeError
 import jinja2
 
 
-class Loader(jinja2.BaseLoader):
+class TemplateLoader(jinja2.BaseLoader):
     def get_source(self, environment, template_path):
         filename = os.path.join(os.getcwd(), template_path)
         mtime = os.path.getmtime(filename)
@@ -62,19 +62,18 @@ def parse_attr(s):
         return tuple(s.split('=', 1))
 
 
-def main(cwd, argv):
+def main(argv):
     args = parse_args(argv)
-    with open(args.output, 'w') as f:
-        env = jinja2.Environment(loader=Loader(),
-                                 undefined=jinja2.StrictUndefined)
-        tpl = env.get_template(args.path)
-        for part in tpl.stream(argv=argv, **args.attrs):
-            print(part, file=f)
+    env = jinja2.Environment(loader=TemplateLoader(),
+                             undefined=jinja2.StrictUndefined)
+    env.get_template(args.path)\
+       .stream(argv=argv, **args.attrs)\
+       .dump(args.output)
+    return 0
 
 
 if __name__ == '__main__':
-    import os
     import sys
-    main(os.getcwd(), sys.argv)
+    sys.exit(main(sys.argv))
 
 
